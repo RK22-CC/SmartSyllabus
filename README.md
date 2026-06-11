@@ -1,6 +1,6 @@
 # SmartSyllabus
  
-A client-side web app that turns university course syllabi into a semester planning dashboard. Upload a PDF or text syllabus and get automated assessment extraction, workload risk scoring, a grade simulator, and a week-by-week study strategy — all saved locally in your browser with no backend required.
+A client-side web app that turns postsecondary course syllabi into a semester planning dashboard. Upload a PDF or text syllabus and get automated assessment extraction, workload risk scoring, a grade simulator, and a week-by-week study strategy — all saved locally in your browser with no backend required.
  
 ---
  
