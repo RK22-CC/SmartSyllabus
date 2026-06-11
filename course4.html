@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SmartSyllabus - Course 4</title>
+  <link rel="stylesheet" href="templatemo-catalyst-style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <style>
+    .btn-acid { color: #fff !important; }
+    .accent-word { color: #fff !important; }
+    body { background:#f8fafc; }
+  </style>
+</head>
+<body data-course-slot="4">
+  <input type="file" id="syllabusInput" accept=".pdf,.txt" style="display:none" />
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="index.html#home" class="nav-logo" aria-label="Syllabus Reader Engine home">
+        <span class="nav-logo-mark">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M5 7h14M5 12h14M5 17h9" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </span>
+        SmartSyllabus
+      </a>
+ 
+      <ul class="nav-links" id="navLinks">
+        <li><a href="index.html#home">Home</a></li>
+        <li><a href="index.html#metrics">Results</a></li>
+        <li><a href="index.html#engine">Engine</a></li>
+        <li id="courseNavLinks"></li>
+      </ul>
+ 
+      <div class="nav-cta">
+        <span id="courseTopButtons" style="display:flex;gap:.5rem;align-items:center;flex-wrap:nowrap;"></span>
+        <a href="#" class="btn-acid upload-syllabus-btn">Add Course Syllabus</a>
+      </div>
+ 
+      <button class="nav-toggle" id="navToggle" type="button" aria-label="Open navigation" aria-expanded="false">
+        <span></span>
+      </button>
+    </div>
+  </nav>
+
+  <main>
+    <section class="analysis-page" id="analysis" style="padding:7rem 0 3rem;background:#f8fafc;min-height:100vh;">
+      <div class="container">
+        <div style="max-width:980px;margin:0 auto;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;">
+            <div>
+              <div class="section-tag">Course 4 Analysis</div>
+              <h2 id="overlay-course-name" class="section-title" style="margin-bottom:.25rem;">Course 4</h2>
+              <div id="overlay-status" style="font-size:.86rem;color:#64748b;">Upload a syllabus to create this course page.</div>
+            </div>
+            <div style="display:flex;gap:.65rem;flex-wrap:wrap;">
+              <a href="index.html#home" class="btn-ghost">Back Home</a>
+              <button type="button" id="replaceCourseBtn" class="btn-ghost" style="cursor:pointer;">Replace This Course</button>
+              <button type="button" id="removeCourseBtn" class="btn-ghost" style="cursor:pointer;color:#dc2626;border-color:#fecaca;">Remove This Course</button>
+                          </div>
+          </div>
+
+          <div style="background:#fff;border-radius:1rem;overflow:hidden;box-shadow:0 18px 55px rgba(15,23,42,0.12);border:1px solid #e2e8f0;">
+            <div id="overlay-loading" style="display:none;padding:4rem 2rem;text-align:center;">
+              <div style="font-size:2.5rem;margin-bottom:1rem;">⚙️</div>
+              <div style="font-size:1rem;font-weight:700;color:#0f172a;">Analyzing your syllabus...</div>
+              <div style="color:#64748b;font-size:.82rem;margin-top:.4rem;">Extracting assessments · Calculating risk · Building study strategy</div>
+              <div style="margin:1.75rem auto 0;width:240px;height:5px;background:#e2e8f0;border-radius:4px;overflow:hidden;">
+                <div id="overlay-progress-bar" style="height:100%;background:#2563eb;border-radius:4px;width:0%;"></div>
+              </div>
+            </div>
+
+            <div id="overlay-error" style="display:none;padding:3rem 2rem;text-align:center;">
+              <div style="font-size:2rem;margin-bottom:.75rem;">⚠️</div>
+              <div id="overlay-error-msg" style="color:#dc2626;font-size:.92rem;font-weight:600;max-width:500px;margin:0 auto;"></div>
+            </div>
+
+            <div id="overlay-empty" style="display:none;padding:4rem 2rem;text-align:center;">
+              <div style="font-size:2.5rem;margin-bottom:.9rem;">📘</div>
+              <div style="font-size:1rem;font-weight:800;color:#0f172a;">No syllabus saved for Course 4 yet</div>
+              <div style="color:#64748b;font-size:.84rem;margin:.35rem auto 1.25rem;max-width:520px;">Upload a syllabus from the home page or use “Replace This Course” to fill this course slot.</div>
+              <button type="button" class="btn-acid upload-syllabus-btn" style="border:none;cursor:pointer;">Add Course Syllabus</button>
+            </div>
+
+            <div id="overlay-results" style="display:none;"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="syllabus-reader.js"></script>
+</body>
+</html>
