@@ -3,111 +3,6 @@
 let currentAnalysis = null;
 let currentTargetGrade = 'A-';
 let uploadTargetSlot = null;
- 
-// ── API Key Management ────────────────────────────────────────────────────────
-const HARDCODED_KEY = '';
-const API_KEY_STORAGE = 'sr_api_key';
- 
-function getApiKey() {
-  // Prefer key saved by user; fall back to hardcoded only if it looks real
-  const saved = localStorage.getItem(API_KEY_STORAGE);
-  if (saved && saved.startsWith('sk-ant-')) return saved;
-  if (HARDCODED_KEY && HARDCODED_KEY.startsWith('sk-ant-')) return HARDCODED_KEY;
-  return null;
-}
- 
-// Returns a Promise that resolves with the key, or rejects if user cancels.
-function promptForApiKey() {
-  return new Promise((resolve, reject) => {
-    // Backdrop
-    const backdrop = document.createElement('div');
-    backdrop.id = 'sr-key-backdrop';
-    backdrop.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.55);backdrop-filter:blur(4px);z-index:9000;display:flex;align-items:center;justify-content:center;padding:1rem;';
- 
-    const modal = document.createElement('div');
-    modal.style.cssText = 'background:#fff;border-radius:1.1rem;padding:2rem 2rem 1.75rem;max-width:480px;width:100%;box-shadow:0 24px 64px rgba(15,23,42,0.22);';
-    modal.innerHTML = `
-      <div style="font-size:1.7rem;margin-bottom:.6rem;">🔑</div>
-      <h3 style="font-size:1.1rem;font-weight:800;color:#0f172a;margin:0 0 .35rem;">Enter your Anthropic API Key</h3>
-      <p style="font-size:.84rem;color:#64748b;margin:0 0 1.25rem;line-height:1.55;">SmartSyllabus uses the Claude API to analyse your syllabus. Paste your key below — it will be saved in this browser only.</p>
-      <input id="sr-key-input" type="password" placeholder="sk-ant-api03-…"
-        style="width:100%;box-sizing:border-box;padding:.65rem .85rem;border:1.5px solid #cbd5e1;border-radius:.6rem;font-size:.9rem;outline:none;margin-bottom:.3rem;font-family:monospace;" />
-      <div id="sr-key-hint" style="font-size:.76rem;color:#94a3b8;margin-bottom:1.1rem;">Get your key at <a href="https://console.anthropic.com" target="_blank" style="color:#2563eb;">console.anthropic.com</a></div>
-      <div style="display:flex;gap:.65rem;justify-content:flex-end;">
-        <button id="sr-key-cancel" style="padding:.55rem 1.1rem;border:1.5px solid #e2e8f0;border-radius:.55rem;background:#fff;color:#64748b;font-size:.85rem;font-weight:600;cursor:pointer;">Cancel</button>
-        <button id="sr-key-submit" style="padding:.55rem 1.3rem;border:none;border-radius:.55rem;background:#2563eb;color:#fff;font-size:.85rem;font-weight:700;cursor:pointer;">Analyse Syllabus →</button>
-      </div>
-    `;
-    backdrop.appendChild(modal);
-    document.body.appendChild(backdrop);
- 
-    const input = modal.querySelector('#sr-key-input');
-    input.focus();
- 
-    modal.querySelector('#sr-key-submit').addEventListener('click', () => {
-      const val = input.value.trim();
-      if (!val.startsWith('sk-ant-')) {
-        input.style.borderColor = '#ef4444';
-        modal.querySelector('#sr-key-hint').textContent = 'Key must start with sk-ant-…';
-        modal.querySelector('#sr-key-hint').style.color = '#ef4444';
-        return;
-      }
-      localStorage.setItem(API_KEY_STORAGE, val);
-      backdrop.remove();
-      resolve(val);
-    });
- 
-    modal.querySelector('#sr-key-cancel').addEventListener('click', () => {
-      backdrop.remove();
-      reject(new Error('cancelled'));
-    });
- 
-    input.addEventListener('keydown', e => {
-      if (e.key === 'Enter') modal.querySelector('#sr-key-submit').click();
-      if (e.key === 'Escape') modal.querySelector('#sr-key-cancel').click();
-    });
-  });
-}
- 
-function showApiKeyError(message) {
-  // Remove any existing error popup
-  document.getElementById('sr-apierr-backdrop')?.remove();
- 
-  const backdrop = document.createElement('div');
-  backdrop.id = 'sr-apierr-backdrop';
-  backdrop.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.6);backdrop-filter:blur(4px);z-index:9100;display:flex;align-items:center;justify-content:center;padding:1rem;';
- 
-  const box = document.createElement('div');
-  box.style.cssText = 'background:#fff;border-radius:1.1rem;padding:2rem 2rem 1.75rem;max-width:440px;width:100%;box-shadow:0 24px 64px rgba(15,23,42,0.25);text-align:center;';
-  box.innerHTML = `
-    <div style="font-size:2rem;margin-bottom:.6rem;">❌</div>
-    <h3 style="font-size:1.05rem;font-weight:800;color:#dc2626;margin:0 0 .5rem;">API Key Failed</h3>
-    <p style="font-size:.84rem;color:#64748b;margin:0 0 1.4rem;line-height:1.55;">${message || 'The API key was rejected. Please check it and try again.'}</p>
-    <div style="display:flex;gap:.65rem;justify-content:center;flex-wrap:wrap;">
-      <button id="sr-apierr-clear" style="padding:.55rem 1.2rem;border:1.5px solid #fecaca;border-radius:.55rem;background:#fff;color:#dc2626;font-size:.85rem;font-weight:600;cursor:pointer;">Clear Key &amp; Retry</button>
-      <button id="sr-apierr-home" style="padding:.55rem 1.2rem;border:none;border-radius:.55rem;background:#0f172a;color:#fff;font-size:.85rem;font-weight:700;cursor:pointer;">Go Home</button>
-    </div>
-  `;
-  backdrop.appendChild(box);
-  document.body.appendChild(backdrop);
- 
-  box.querySelector('#sr-apierr-clear').addEventListener('click', () => {
-    localStorage.removeItem(API_KEY_STORAGE);
-    backdrop.remove();
-  });
-  box.querySelector('#sr-apierr-home').addEventListener('click', () => {
-    backdrop.remove();
-    window.location.href = 'index.html#home';
-  });
-}
- 
-// Resolves to the key to use, prompting if needed. Throws if cancelled.
-async function requireApiKey() {
-  const key = getApiKey();
-  if (key) return key;
-  return await promptForApiKey(); // throws 'cancelled' if user hits Cancel
-}
-// ─────────────────────────────────────────────────────────────────────────────
 const MAX_COURSES = 5;
  
 const STORAGE_VERSION_KEY = 'sr_storage_version';
@@ -269,10 +164,17 @@ async function runAnalysisForSlot(file, slot) {
     if (activeSlot === slot) { currentAnalysis = result; renderResults(result); }
     else window.location.href = fileForSlot(slot);
   } catch (err) {
-    if (err.message === '__api_key_error__' || err.message === 'cancelled') return; // handled by modal
-    const message = err.message || 'Analysis failed. Check your API key and try again.';
-    if (activeSlot) { const el = document.getElementById('overlay-error-msg'); if (el) el.textContent = message; showOverlayState('error'); }
-    else showHomeUploadState('error', message);
+    const message = err.message || 'Analysis failed.';
+    const isAuthError = message.toLowerCase().includes('401') || message.toLowerCase().includes('authentication') || message.toLowerCase().includes('invalid x-api-key') || message.toLowerCase().includes('api key');
+    if (isAuthError) {
+      sessionStorage.removeItem(SS_KEY);
+      if (activeSlot) showOverlayState('error');
+      else showHomeUploadState('error', message);
+      showApiKeyFailedState();
+    } else {
+      if (activeSlot) { const el = document.getElementById('overlay-error-msg'); if (el) el.textContent = message; showOverlayState('error'); }
+      else showHomeUploadState('error', message);
+    }
   }
 }
  
@@ -303,6 +205,93 @@ function loadCoursePage() {
   renderResults(currentAnalysis);
 }
  
+// ===== API Key helpers =====
+const SS_KEY = 'ss_api_key';
+const PLACEHOLDER = 'YOUR_API_HERE';
+ 
+function getEffectiveApiKey() {
+  // Use hardcoded key if it's been filled in, otherwise fall back to session key
+  const hardcoded = 'YOUR_API_HERE';
+  if (hardcoded !== PLACEHOLDER) return hardcoded;
+  return sessionStorage.getItem(SS_KEY) || '';
+}
+ 
+function needsApiKeyPrompt() {
+  return getEffectiveApiKey() === '' || getEffectiveApiKey() === PLACEHOLDER;
+}
+ 
+function showApiKeyModal(file, slot) {
+  // Remove any existing modal
+  document.getElementById('ss-key-modal')?.remove();
+ 
+  const modal = document.createElement('div');
+  modal.id = 'ss-key-modal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(15,23,42,0.75);display:flex;align-items:center;justify-content:center;padding:1rem;';
+  modal.innerHTML = `
+    <div style="background:#fff;border-radius:1rem;padding:2.25rem 2rem;max-width:480px;width:100%;box-shadow:0 25px 80px rgba(0,0,0,0.35);">
+      <div style="font-size:1.5rem;margin-bottom:.75rem;">🔑</div>
+      <div style="font-size:1rem;font-weight:800;color:#0f172a;margin-bottom:.35rem;">Anthropic API Key Required</div>
+      <div style="font-size:.83rem;color:#64748b;margin-bottom:1.25rem;line-height:1.6;">Enter your Anthropic API key to analyze this syllabus. It's stored for this browser session only and never leaves your device.</div>
+      <input id="ss-key-input" type="password" placeholder="sk-ant-..." autocomplete="off"
+        style="width:100%;padding:.65rem 1rem;border:1.5px solid #e2e8f0;border-radius:.5rem;font-size:.9rem;box-sizing:border-box;outline:none;margin-bottom:.75rem;" />
+      <div id="ss-key-error" style="display:none;color:#dc2626;font-size:.78rem;margin-bottom:.6rem;"></div>
+      <div style="display:flex;gap:.6rem;">
+        <button id="ss-key-cancel" style="flex:1;padding:.65rem;background:#f1f5f9;color:#374151;border:none;border-radius:.5rem;font-size:.88rem;font-weight:600;cursor:pointer;">Cancel</button>
+        <button id="ss-key-submit" style="flex:2;padding:.65rem;background:#2563eb;color:#fff;border:none;border-radius:.5rem;font-size:.88rem;font-weight:700;cursor:pointer;">Analyze Syllabus →</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+ 
+  const input = modal.querySelector('#ss-key-input');
+  const errEl = modal.querySelector('#ss-key-error');
+  const submitBtn = modal.querySelector('#ss-key-submit');
+  const cancelBtn = modal.querySelector('#ss-key-cancel');
+ 
+  input.focus();
+ 
+  cancelBtn.addEventListener('click', () => { modal.remove(); });
+ 
+  const doSubmit = async () => {
+    const key = input.value.trim();
+    if (!key) { errEl.textContent = 'Please enter an API key.'; errEl.style.display = 'block'; return; }
+    errEl.style.display = 'none';
+    submitBtn.textContent = 'Validating...';
+    submitBtn.disabled = true;
+    input.disabled = true;
+    cancelBtn.disabled = true;
+ 
+    // Store temporarily and attempt analysis
+    sessionStorage.setItem(SS_KEY, key);
+    modal.remove();
+    try {
+      await runAnalysisForSlot(file, slot);
+    } catch (err) {
+      // runAnalysisForSlot handles its own error display
+    }
+  };
+ 
+  submitBtn.addEventListener('click', doSubmit);
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') doSubmit(); });
+}
+ 
+function showApiKeyFailedState() {
+  // Show a clear "key failed" overlay with home redirect
+  document.getElementById('ss-key-failed')?.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'ss-key-failed';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(15,23,42,0.75);display:flex;align-items:center;justify-content:center;padding:1rem;';
+  overlay.innerHTML = `
+    <div style="background:#fff;border-radius:1rem;padding:2.25rem 2rem;max-width:420px;width:100%;box-shadow:0 25px 80px rgba(0,0,0,0.35);text-align:center;">
+      <div style="font-size:2rem;margin-bottom:.75rem;">❌</div>
+      <div style="font-size:1rem;font-weight:800;color:#0f172a;margin-bottom:.35rem;">API Key Failed</div>
+      <div style="font-size:.83rem;color:#64748b;margin-bottom:1.5rem;line-height:1.6;">The API key you entered was rejected. Please check that it's correct and has access to the Anthropic API.</div>
+      <button onclick="sessionStorage.removeItem('ss_api_key');document.getElementById('ss-key-failed').remove();window.location.href='index.html#home';"
+        style="padding:.65rem 2rem;background:#2563eb;color:#fff;border:none;border-radius:.5rem;font-size:.88rem;font-weight:700;cursor:pointer;">Clear & Go Home</button>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+// ===========================
+ 
 function setupUploads() {
   const input = document.getElementById('syllabusInput');
   document.querySelectorAll('.upload-syllabus-btn').forEach((btn) => btn.addEventListener('click', (e) => { e.preventDefault(); beginUpload(firstEmptySlot()); }));
@@ -314,7 +303,11 @@ function setupUploads() {
     if (!file) return;
     const slot = uploadTargetSlot || firstEmptySlot();
     if (!slot) { alert('You already have 5 courses saved. Open one course and replace or remove it.'); return; }
-    await runAnalysisForSlot(file, slot);
+    if (needsApiKeyPrompt()) {
+      showApiKeyModal(file, slot);
+    } else {
+      await runAnalysisForSlot(file, slot);
+    }
   });
 }
  
@@ -343,7 +336,7 @@ async function analyzeSyllabus(text) {
   const today = new Date().toISOString().split('T')[0];
   const systemPrompt = 'You are a university syllabus parser. Return ONLY a valid JSON object with no markdown fences, no explanation.\n\nToday\'s date is ' + today + '. Use this to make the weeklyStrategy relative to today — periods should start from today or the nearest upcoming week, not from the course start. If the course end date has already passed relative to today, still return the data but set courseEndDate accordingly.\n\nSchema:\n{\n  "courseName": "string",\n  "courseCode": "string or null",\n  "courseEndDate": "YYYY-MM-DD or null",\n  "assessments": [\n    { "name": "string", "type": "exam|assignment|lab|quiz|project|participation|other", "weight": number, "bonus": boolean, "date": "string or null", "description": "string" }\n  ],\n  "riskScore": "number 0-100",\n  "riskFactors": ["string"],\n  "weeklyStrategy": [\n    { "period": "string", "focus": "string", "tasks": ["string","string","string"] }\n  ],\n  "gradingScale": { "A+": number, "A": number, "A-": number, "B+": number, "B": number, "B-": number, "C+": number, "C": number, "Pass": number }\n}\n\nRisk score: based on deadline clustering and high-weight items close together. 0-30=low, 31-60=moderate, 61-80=high, 81-100=critical.\nNon-bonus weights must sum to 100. Normalize non-bonus weights if needed. Bonus/extra-credit assessments must have bonus: true. CRITICAL: bonus weight must be the exact stated percentage (e.g. if syllabus says "1% bonus", set weight: 1). NEVER set a bonus weight to 0. Bonus weights are separate from and do not count toward the 100% total.\nIf no grading scale found, use: A+=90,A=85,A-=80,B+=77,B=73,B-=70,C+=67,C=63,Pass=50. Always include Pass=50 directly after C in the gradingScale.';
  
-  const ANTHROPIC_KEY = await requireApiKey();
+  const ANTHROPIC_KEY = getEffectiveApiKey();
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -361,13 +354,7 @@ async function analyzeSyllabus(text) {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    const msg = err.error?.message || 'API error ' + res.status;
-    if (res.status === 401 || res.status === 403) {
-      localStorage.removeItem(API_KEY_STORAGE);
-      showApiKeyError(msg);
-      throw new Error('__api_key_error__');
-    }
-    throw new Error(msg);
+    throw new Error(err.error?.message || 'API error ' + res.status);
   }
   const data = await res.json();
   let raw = data.content[0].text.trim();
@@ -560,7 +547,7 @@ async function regenerateStrategy() {
       '- Stop at the course end date.\n' +
       'Return ONLY a valid JSON object: { "weeklyStrategy": [ { "period": "string", "focus": "string", "tasks": ["string","string","string"] } ] }. No markdown, no explanation.';
  
-    const ANTHROPIC_KEY = await requireApiKey();
+    const ANTHROPIC_KEY = getEffectiveApiKey();
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -577,16 +564,7 @@ async function regenerateStrategy() {
       })
     });
  
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      const msg = errData.error?.message || 'API error ' + res.status;
-      if (res.status === 401 || res.status === 403) {
-        localStorage.removeItem(API_KEY_STORAGE);
-        showApiKeyError(msg);
-        throw new Error('__api_key_error__');
-      }
-      throw new Error(msg);
-    }
+    if (!res.ok) throw new Error('API error ' + res.status);
     const apiData = await res.json();
     let raw = apiData.content[0].text.trim().replace(/^```json\s*/i,'').replace(/\s*```$/i,'');
     const parsed = JSON.parse(raw);
@@ -611,7 +589,6 @@ async function regenerateStrategy() {
           : '<div style="display:grid;gap:.7rem;">' + newStrategyCards + '</div>');
     }
   } catch (err) {
-    if (err.message === '__api_key_error__' || err.message === 'cancelled') return;
     const updatedSection = document.getElementById('strategy-section');
     if (updatedSection) {
       updatedSection.innerHTML = '<div style="font-size:.86rem;font-weight:700;color:#0f172a;margin-bottom:.9rem;">\ud83d\udcc5 Weekly Study Strategy</div>' +
@@ -713,4 +690,3 @@ function boot() {
 }
  
 document.addEventListener('DOMContentLoaded', boot);
- 
